@@ -67,6 +67,8 @@ namespace dnTrace
                 CreateNoWindow = false,
             };
             var p = Process.Start(psi);
+            p.EnableRaisingEvents = true;
+
             Console.WriteLine($"Launching {psi.FileName}...");
             
             var session = new TraceSession(p);

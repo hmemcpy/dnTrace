@@ -36,7 +36,12 @@ namespace dnTrace.Bootstrapper
         {
             this.process = process;
             server = new NamedPipeServerStream($"{process.ProcessName}.{process.Id}", PipeDirection.InOut);
-            process.Exited += (sender, args) => server.Disconnect();
+            
+            process.Exited += (sender, args) =>
+            {
+                Messages.Add(new ExecutionResult { Message = $"Process terminated. Disconnecting...", IsMessage = true });
+                server.Disconnect();
+            };
         }
 
         public async Task Run(InjectContext injectContext, CancellationToken cancellationToken)
