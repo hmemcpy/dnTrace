@@ -97,6 +97,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\dnlib\src\dnlib.csproj">
+      <Project>{fdfc1237-143f-4919-8318-4926901f4639}</Project>
+      <Name>dnlib</Name>
+    </ProjectReference>
     <ProjectReference Include="..\dnTrace.Bootstrapper\dnTrace.Bootstrapper.csproj">
       <Project>{9F6381C3-8254-4BBF-BB5C-D2B708A0F36B}</Project>
       <Name>dnTrace.Bootstrapper</Name>
@@ -114,6 +118,7 @@
   <Target Name="AfterBuild" Condition="'$(Configuration)' == 'Release'">
     <ItemGroup>
       <InputAssemblies Include="$(OutputPath)\dnTrace.exe" />
+      <InputAssemblies Include="$(OutputPath)\dnlib.dll" />
       <InputAssemblies Include="$(OutputPath)\Colorful.Console.dll" />
       <InputAssemblies Include="$(OutputPath)\CommandLine.dll" />
       <InputAssemblies Include="$(OutputPath)\PInvoke.Windows.Core.dll" />
