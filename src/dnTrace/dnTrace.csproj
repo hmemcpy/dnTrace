@@ -86,6 +86,7 @@
     <Compile Include="Options.cs" />
     <Compile Include="ProcessData\ModuleInfo.cs" />
     <Compile Include="ProcessData\ProcessInfo.cs" />
+    <Compile Include="ProcessData\InjectionContextCreator.cs" />
     <Compile Include="ProcessData\Runtimes.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -51,6 +51,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\dnTrace.Bootstrapper\dnTrace.Bootstrapper.csproj">
+      <Project>{9F6381C3-8254-4BBF-BB5C-D2B708A0F36B}</Project>
+      <Name>dnTrace.Bootstrapper</Name>
+    </ProjectReference>
     <ProjectReference Include="..\dnTrace\dnTrace.csproj">
       <Project>{61B85934-F423-43FE-8557-94172373FB38}</Project>
       <Name>dnTrace</Name>

@@ -16,6 +16,5 @@ namespace dnTrace.Bootstrapper
         public string TypeFQN { get; set; }
         public string MethodName { get; set; }
         public List<string> ParametersFQN { get; set; }
-        public string Visibility { get; set; }
     }
 }
