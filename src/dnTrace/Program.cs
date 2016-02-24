@@ -4,11 +4,16 @@ using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Threading;
+using Colorful;
 using CommandLine;
 using dnTrace.Bootstrapper;
+using dnTrace.ProcessData;
+using dnTrace.Utils;
+using Console = System.Console;
 
 namespace dnTrace
 {
@@ -16,13 +21,15 @@ namespace dnTrace
     {
         static void Main(string[] args)
         {
-            //var options = new Options();
-            //if (!Parser.Default.ParseArguments(args, options))
-            //{
-            //    Console.WriteLine("Missing arguments");
-            //    return;
-            //}
+            //var font = Assembly.GetExecutingAssembly().GetManifestResourceStream("dnTrace.Resources.block.flf");
+            //Colorful.Console.WriteAscii("dnTrace", FigletFont.Load(font), Color.Lime);
 
+            Parser.Default.ParseArguments<Options>(args)
+                .WithParsed(options => Run(options));
+        }
+
+        private static void Run(Options options)
+        {
             var cts = new CancellationTokenSource();
             Console.CancelKeyPress +=
                 (sender, e) =>
@@ -43,7 +50,7 @@ namespace dnTrace
                 SynchronizationContext.SetSynchronizationContext(context);
 
                 var dispatcherFrame = new DispatcherFrame();
-                Task mainTask = MainAsync(null/*options*/, cts.Token);
+                Task mainTask = MainAsync(options, cts.Token);
                 mainTask.ContinueWith(task => dispatcherFrame.Continue = false, cts.Token);
 
                 Dispatcher.PushFrame(dispatcherFrame);
@@ -53,25 +60,18 @@ namespace dnTrace
             {
                 SynchronizationContext.SetSynchronizationContext(previousContext);
             }
-
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadKey(true);
         }
 
         private static async Task MainAsync(Options options, CancellationToken cancellationToken)
         {
-            var path = Path.GetFullPath("../../../Test/TestApplicationVisualBasicGUI/bin/Debug/TestApplicationVisualBasicGUI.exe");
-            var psi = new ProcessStartInfo
+            Process targetProcess;
+            if (!TryGetProcess(options.Process, out targetProcess))
             {
-                FileName = path,
-                CreateNoWindow = false,
-            };
-            var p = Process.Start(psi);
-            p.EnableRaisingEvents = true;
+                Console.WriteLine($"Unable to find process...");
+                return;
+            }
 
-            Console.WriteLine($"Launching {psi.FileName}...");
-            
-            var session = new TraceSession(p);
+            var session = new TraceSession(targetProcess);
             session.Messages.CollectionChanged += (sender, e) =>
             {
                 foreach (ExecutionResult ctx in e.NewItems)
@@ -85,15 +85,60 @@ namespace dnTrace
                 }
             };
 
-            await session.Run(new InjectContext
+            var creator = new InjectionContextCreator(targetProcess);
+            var contexts = creator.CreateInjectionContext(options.Type, options.Method).ToArray();
+
+            await session.Run(cancellationToken, contexts);
+        }
+
+        private static bool TryGetProcess(string process, out Process targetProcess)
+        {
+            var availableProcesses = ProcessUtil.GetAllProcesses().Where(info => info.IsManaged && !info.IsAccessDenied).ToList();
+
+            int pid;
+            if (int.TryParse(process, out pid))
             {
-                MethodName = "OnClick",
-                TypeFQN = "System.Windows.Forms.Button, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089",
-                ParametersFQN = new List<string>
+                var p = availableProcesses.FirstOrDefault(info => info.ProcessId == pid);
+                if (p != null)
                 {
-                    "System.EventArgs, mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089"
+                    targetProcess = Process.GetProcessById(pid);
+                    return true;
                 }
-            }, cancellationToken);
+            }
+
+            var namedProcesses = availableProcesses.Where(info => info.Name.StartsWith(process, StringComparison.OrdinalIgnoreCase)).ToList();
+            if (namedProcesses.Any())
+            {
+                var selectedProcessId = namedProcesses.Count > 1 ? PromptSelectProcess(process, namedProcesses) : namedProcesses[0].ProcessId;
+                targetProcess = Process.GetProcessById(selectedProcessId);
+                return true;
+            }
+
+            targetProcess = null;
+            return false;
+        }
+
+        private static int PromptSelectProcess(string processName, List<ProcessInfo> namedProcesses)
+        {
+            Console.Write("Multiple processes with the name '");
+            Colorful.Console.Write($"{processName}", Color.White);
+            Console.WriteLine("' were found. Please select the desired process:");
+            Console.WriteLine();
+
+            for (int i = 0; i < namedProcesses.Count; i++)
+            {
+                Console.WriteLine($"[{i + 1}] {namedProcesses[i].Name}, PID: {namedProcesses[i].ProcessId}");
+            }
+
+            int result;
+            string input;
+            do
+            {
+                Console.WriteLine($"Enter process index (e.g. {string.Join(", ", Enumerable.Range(1, namedProcesses.Count))}): ");
+                input = Console.ReadLine();
+            } while (!int.TryParse(input, out result) && result >= 1 && result <= namedProcesses.Count);
+
+            return namedProcesses[result].ProcessId;
         }
 
         private static void PrintValues(ExecutionResult result)

@@ -44,7 +44,7 @@ namespace dnTrace.Bootstrapper
             };
         }
 
-        public async Task Run(InjectContext injectContext, CancellationToken cancellationToken)
+        public async Task Run(CancellationToken cancellationToken, params InjectContext[] injectContext)
         {
             Injector.InjectInto(process);
 
@@ -52,7 +52,10 @@ namespace dnTrace.Bootstrapper
 
             try
             {
-                binaryFormatter.Serialize(server, injectContext);
+                foreach (var context in injectContext)
+                {
+                    binaryFormatter.Serialize(server, context);
+                }
             }
             catch (Exception)
             {
