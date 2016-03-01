@@ -25,7 +25,7 @@ namespace dnTrace.ProcessData
             return ProcessModule(moduleDef, typeFullName, methodName);
         }
 
-        private static IEnumerable<InjectContext> ProcessModule(ModuleDef moduleDef, string typeFullName, string methodName, bool recurse = true)
+        private static IEnumerable<InjectContext> ProcessModule(ModuleDef moduleDef, string typeFullName, string methodName)
         {
             var typeDef = moduleDef.FindReflection(typeFullName) ?? 
                           GetReferencedAssemblies(moduleDef).Select(d => d.FindReflection(typeFullName)).FirstOrDefault(def => def != null);
@@ -54,29 +54,7 @@ namespace dnTrace.ProcessData
             return modules;
         }
 
-        private static InjectContext[] GetResults(ModuleDef moduleDef, out IEnumerable<InjectContext> injectContexts, string typeFullName,
-            string methodName, bool recurse)
-        {
-            InjectContext[] results;
-            recurse = false;
-            var modules = moduleDef.GetAssemblyRefs().Select(assemblyRef =>
-            {
-                var assemblyDef = moduleDef.Context.AssemblyResolver.Resolve(assemblyRef.FullName, moduleDef);
-                return assemblyDef.ManifestModule;
-            });
-
-            results = modules.SelectMany(module => ProcessModule(module, typeFullName, methodName, recurse)).ToArray();
-
-            injectContexts = results;
-            return results;
-        }
-
-        private static IEnumerable<IMethodDefOrRef> Match(IEnumerable<IMethodDefOrRef> members, string typeFullName, string methodName)
-        {
-            return members.Where(m => m.DeclaringType.ReflectionFullName == typeFullName && m.Name == methodName);
-        }
-
-        private static List<string> GetParameters(IMethodDefOrRef method)
+        private static List<string> GetParameters(IMethod method)
         {
             return method.MethodSig.Params.Select(sig => sig.AssemblyQualifiedName).ToList();
         }
