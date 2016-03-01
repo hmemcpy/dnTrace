@@ -13,7 +13,7 @@ using CommandLine;
 using dnTrace.Bootstrapper;
 using dnTrace.ProcessData;
 using dnTrace.Utils;
-using Console = System.Console;
+using Console = Colorful.Console;
 
 namespace dnTrace
 {
@@ -21,8 +21,19 @@ namespace dnTrace
     {
         static void Main(string[] args)
         {
-            //var font = Assembly.GetExecutingAssembly().GetManifestResourceStream("dnTrace.Resources.block.flf");
-            //Colorful.Console.WriteAscii("dnTrace", FigletFont.Load(font), Color.Lime);
+            using (var fontStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("dnTrace.Resources.block.flf"))
+            {
+                var styleSheet = new StyleSheet(Color.LightGoldenrodYellow);
+                styleSheet.AddStyle("dn", Color.Yellow);
+                styleSheet.AddStyle("Trace", Color.PaleGreen);
+                var figletFont = FigletFont.Load(fontStream);
+                
+                Console.WriteAsciiStyled("dnTrace", figletFont, styleSheet);
+            }
+
+            Console.WriteLine("dnTrace v1.0 by Igal Tabachnik");
+            Console.WriteLine("==============================");
+            Console.WriteLine();
 
             Parser.Default.ParseArguments<Options>(args)
                 .WithParsed(options => Run(options));
@@ -67,7 +78,7 @@ namespace dnTrace
             Process targetProcess;
             if (!TryGetProcess(options.Process, out targetProcess))
             {
-                Console.WriteLine($"Unable to find process...");
+                Console.WriteLine("Unable to find process...");
                 return;
             }
 
@@ -87,6 +98,14 @@ namespace dnTrace
 
             var creator = new InjectionContextCreator(targetProcess);
             var contexts = creator.CreateInjectionContext(options.Type, options.Method).ToArray();
+
+            Console.WriteLine($"Intercepting '{targetProcess.ProcessName}', PID: {targetProcess.Id}...");
+            Console.WriteLine();
+            Console.WriteLine("Listening to the following method(s):");
+            foreach (var context in contexts)
+            {
+                Console.WriteLine(context.ToString());
+            }
 
             await session.Run(cancellationToken, contexts);
         }
@@ -167,7 +186,7 @@ namespace dnTrace
             }
             else
             {
-                Colorful.Console.Write("<none>", Color.White);
+                Colorful.Console.Write("void", Color.White);
             }
 
             Console.WriteLine();

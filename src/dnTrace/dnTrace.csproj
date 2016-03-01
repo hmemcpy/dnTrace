@@ -40,8 +40,8 @@
     <StartupObject>dnTrace.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Colorful.Console, Version=1.0.4.0, Culture=neutral, PublicKeyToken=cc1f2a0d977b1e28, processorArchitecture=MSIL">
-      <HintPath>..\packages\Colorful.Console.1.0.4\lib\net46\Colorful.Console.dll</HintPath>
+    <Reference Include="Colorful.Console, Version=1.0.5.0, Culture=neutral, PublicKeyToken=cc1f2a0d977b1e28, processorArchitecture=MSIL">
+      <HintPath>..\packages\Colorful.Console.1.0.5\lib\net46\Colorful.Console.dll</HintPath>
       <Private>True</Private>
     </Reference>
     <Reference Include="CommandLine, Version=2.0.275.0, Culture=neutral, PublicKeyToken=de6f01bd326f8c32, processorArchitecture=MSIL">
@@ -97,6 +97,9 @@
     <None Include="App.config" />
     <None Include="packages.config" />
     <EmbeddedResource Include="Resources\block.flf" />
+    <EmbeddedResource Include="Resources\big.flf" />
+    <EmbeddedResource Include="Resources\ogre.flf" />
+    <EmbeddedResource Include="Resources\slant.flf" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\dnlib\src\dnlib.csproj">
