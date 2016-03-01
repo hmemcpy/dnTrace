@@ -5,7 +5,7 @@ Here's what it does: attaching to a live .NET process (e.g. a [GUI written in Vi
 
 The output is a method call with captured parameter and return values (when available).
 
-![](https://i.imgur.com/wVFSmK9.gif)
+![](https://i.imgur.com/j1LQwmM.gif)
 
 ## On the shoulders of giants
 
