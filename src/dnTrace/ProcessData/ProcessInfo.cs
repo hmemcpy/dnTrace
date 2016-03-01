@@ -36,7 +36,7 @@ namespace dnTrace.ProcessData
             }
         }
 
-        private static readonly Kernel32.ProcessAccess ProcessQueryLimitedInformation =
+        private static readonly uint ProcessQueryLimitedInformation =
             Environment.OSVersion.Version.Major >= 6
                 ? Kernel32.ProcessAccess.PROCESS_QUERY_LIMITED_INFORMATION
                 : Kernel32.ProcessAccess.PROCESS_QUERY_INFORMATION;

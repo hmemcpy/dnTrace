@@ -75,10 +75,13 @@ namespace dnTrace
 
         private static async Task MainAsync(Options options, CancellationToken cancellationToken)
         {
+            if (string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("DNTRACE_HOME", EnvironmentVariableTarget.User)))
+                Environment.SetEnvironmentVariable("DNTRACE_HOME", Path.GetDirectoryName(Injector.InjectorPath), EnvironmentVariableTarget.User);
+
             Process targetProcess;
             if (!TryGetProcess(options.Process, out targetProcess))
             {
-                Console.WriteLine("Unable to find process...");
+                Console.WriteLine("Unable to find process...", Color.Red);
                 return;
             }
 
@@ -88,7 +91,7 @@ namespace dnTrace
                 foreach (ExecutionResult ctx in e.NewItems)
                 {
                     if (ctx.IsMessage)
-                        Colorful.Console.WriteLine(ctx.Message, Color.Yellow);
+                        Console.WriteLine(ctx.Message, Color.Yellow);
                     else
                     {
                         PrintValues(ctx);
@@ -101,10 +104,19 @@ namespace dnTrace
 
             Console.WriteLine($"Intercepting '{targetProcess.ProcessName}', PID: {targetProcess.Id}...");
             Console.WriteLine();
+
+            if (!contexts.Any())
+            {
+                Console.Write($"Unable to find any references to ", Color.Orange);
+                Console.Write($"{options.Type}.{options.Method}", Color.OrangeRed);
+                Console.WriteLine(" in the target process or its assemblies.", Color.Orange);
+                return;
+            }
+
             Console.WriteLine("Listening to the following method(s):");
             foreach (var context in contexts)
             {
-                Console.WriteLine(context.ToString());
+                Console.WriteLine(context.ToString(), Color.White);
             }
 
             await session.Run(cancellationToken, contexts);
@@ -140,7 +152,7 @@ namespace dnTrace
         private static int PromptSelectProcess(string processName, List<ProcessInfo> namedProcesses)
         {
             Console.Write("Multiple processes with the name '");
-            Colorful.Console.Write($"{processName}", Color.White);
+            Console.Write($"{processName}", Color.White);
             Console.WriteLine("' were found. Please select the desired process:");
             Console.WriteLine();
 
@@ -164,29 +176,24 @@ namespace dnTrace
         {
             var parts = result.MethodName.Split('.');
             var name = parts.Last();
-            var ns = parts.Take(parts.Length - 1);
-            Console.Write(string.Join(".", ns));
-            Console.Write('.');
-            Colorful.Console.Write(name, Color.FromArgb(0xc33400));
+            Console.Write(name, Color.FromArgb(0x2B91AF));
             Console.Write('(');
             if (result.Parameters.Any())
             {
                 foreach (var param in result.Parameters)
                 {
-                    Colorful.Console.Write("{ ", Color.White);
-                    Colorful.Console.Write(param.Value, Color.AliceBlue);
-                    Colorful.Console.Write(" }");
+                    Console.Write(param.ValueJson, Color.AliceBlue);
                 }
             }
             Console.Write(')');
             Console.Write(" = ");
             if (result.Result != null)
             {
-                Colorful.Console.Write(result.Result, Color.White);
+                Console.Write(result.Result, Color.White);
             }
             else
             {
-                Colorful.Console.Write("void", Color.White);
+                Console.Write("void", Color.White);
             }
 
             Console.WriteLine();

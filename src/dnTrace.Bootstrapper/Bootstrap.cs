@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.IO.Pipes;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Remoting.Messaging;
 using System.Runtime.Serialization;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Principal;
@@ -15,6 +13,7 @@ using System.Threading.Tasks;
 using CodeCop.Core;
 using CodeCop.Core.Extensions;
 using CodeCop.Core.Fluent;
+using Jil;
 
 namespace dnTrace.Bootstrapper
 {
@@ -64,7 +63,7 @@ namespace dnTrace.Bootstrapper
                         InterceptMethod(ctx, pipe);
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                 }
             });
@@ -81,13 +80,14 @@ namespace dnTrace.Bootstrapper
 
             methodInfo?.Override(context =>
             {
+                Debugger.Launch();
                 var executionContext = new ExecutionResult();
                 var mi = context.InterceptedMethod as MethodInfo;
                 if (mi != null)
                 {
                     executionContext.Entry = DateTime.Now.ToString(CultureInfo.InvariantCulture);
-                    executionContext.MethodName = mi.DeclaringType.FullName + "." + mi.Name;
-                    executionContext.Parameters = context.Parameters.Select(p => new KeyValuePair<string, string>(p.Name, p.Value.ToString())).ToList();
+                    executionContext.MethodName = mi.DeclaringType?.FullName + "." + mi.Name;
+                    executionContext.Parameters = context.Parameters.Select(p => Create(p)).ToList();
                 }
                 Report(outputStream, executionContext);
 
@@ -103,10 +103,25 @@ namespace dnTrace.Bootstrapper
             {
                 binaryFormatter.Serialize(outputStream, executionResult);
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 Debugger.Break();
             }
+        }
+
+        private static ParameterData Create(Parameter p)
+        {
+            return new ParameterData
+            {
+                Name = p.Name,
+                Type = p.Value?.GetType().ToString(),
+                ValueJson = SerializeValue(p.Value)
+            };
+        }
+
+        private static string SerializeValue(object value)
+        {
+            return JSON.Serialize(value);
         }
     }
 }
