@@ -24,8 +24,8 @@ namespace dnTrace
             using (var fontStream = Assembly.GetExecutingAssembly().GetManifestResourceStream("dnTrace.Resources.block.flf"))
             {
                 var styleSheet = new StyleSheet(Color.LightGoldenrodYellow);
-                styleSheet.AddStyle("dn", Color.Yellow);
-                styleSheet.AddStyle("Trace", Color.PaleGreen);
+                styleSheet.AddStyle("dn", Color.Turquoise);
+                styleSheet.AddStyle("Trace", Color.Coral);
                 var figletFont = FigletFont.Load(fontStream);
                 
                 Console.WriteAsciiStyled("dnTrace", figletFont, styleSheet);
@@ -240,6 +240,9 @@ namespace dnTrace
         {
             var parts = result.MethodName.Split('.');
             var name = parts.Last();
+            var ns = parts.Take(parts.Length - 1);
+            Console.Write(string.Join(".", ns));
+            Console.Write('.');
             Console.Write(name, Color.FromArgb(0x2B91AF));
             Console.Write('(');
             if (result.Parameters.Any())

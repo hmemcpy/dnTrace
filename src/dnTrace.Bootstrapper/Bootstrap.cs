@@ -78,6 +78,10 @@ namespace dnTrace.Bootstrapper
             var bindingFlags = BindingFlags.Instance | BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public;
             var methodInfo = type.GetMethod(ctx.MethodName, bindingFlags, null, parameters, new ParameterModifier[0]);
 
+            methodInfo?.OnError(context =>
+            {
+                // do nothing for now
+            });
             methodInfo?.Override(context =>
             {
                 var executionContext = new ExecutionResult();
