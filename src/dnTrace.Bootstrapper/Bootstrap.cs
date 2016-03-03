@@ -80,7 +80,6 @@ namespace dnTrace.Bootstrapper
 
             methodInfo?.Override(context =>
             {
-                Debugger.Launch();
                 var executionContext = new ExecutionResult();
                 var mi = context.InterceptedMethod as MethodInfo;
                 if (mi != null)

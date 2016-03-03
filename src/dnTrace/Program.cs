@@ -31,8 +31,8 @@ namespace dnTrace
                 Console.WriteAsciiStyled("dnTrace", figletFont, styleSheet);
             }
 
-            Console.WriteLine("dnTrace v1.0 by Igal Tabachnik");
-            Console.WriteLine("==============================");
+            Console.WriteLine("dnTrace v1.0 by Igal Tabachnik", Color.White);
+            Console.WriteLine("──────────────────────────────", Color.White);
             Console.WriteLine();
 
             Parser.Default.ParseArguments<Options>(args)
@@ -102,18 +102,23 @@ namespace dnTrace
             var creator = new InjectionContextCreator(targetProcess);
             var contexts = creator.CreateInjectionContext(options.Type, options.Method).ToArray();
 
-            Console.WriteLine($"Intercepting '{targetProcess.ProcessName}', PID: {targetProcess.Id}...");
+            Console.WriteLine($"Attaching to '{targetProcess.ProcessName}', PID: {targetProcess.Id}...");
             Console.WriteLine();
 
             if (!contexts.Any())
             {
-                Console.Write($"Unable to find any references to ", Color.Orange);
-                Console.Write($"{options.Type}.{options.Method}", Color.OrangeRed);
-                Console.WriteLine(" in the target process or its assemblies.", Color.Orange);
+                Console.WriteLine($"Unable to find any references to '{options.Type}.{options.Method}' in the target process or its assemblies.", Color.Yellow);
+                Console.WriteLine("Make sure the specified full type name and method name is correct.", Color.Yellow);
                 return;
             }
 
-            Console.WriteLine("Listening to the following method(s):");
+            if (contexts.Length > 1)
+            {
+                contexts = SelectMethodsToIntercept(contexts);
+                Console.WriteLine();
+            }
+
+            Console.WriteLine("Tracing the following method(s):", Color.PaleGreen);
             foreach (var context in contexts)
             {
                 Console.WriteLine(context.ToString(), Color.White);
@@ -149,7 +154,7 @@ namespace dnTrace
             return false;
         }
 
-        private static int PromptSelectProcess(string processName, List<ProcessInfo> namedProcesses)
+        private static int PromptSelectProcess(string processName, IReadOnlyList<ProcessInfo> namedProcesses)
         {
             Console.Write("Multiple processes with the name '");
             Console.Write($"{processName}", Color.White);
@@ -158,7 +163,8 @@ namespace dnTrace
 
             for (int i = 0; i < namedProcesses.Count; i++)
             {
-                Console.WriteLine($"[{i + 1}] {namedProcesses[i].Name}, PID: {namedProcesses[i].ProcessId}");
+                Console.Write($"[{i + 1}] ", Color.White);
+                Console.WriteLine($"{ namedProcesses[i].Name}, PID: {namedProcesses[i].ProcessId}");
             }
 
             int result;
@@ -170,6 +176,64 @@ namespace dnTrace
             } while (!int.TryParse(input, out result) && result >= 1 && result <= namedProcesses.Count);
 
             return namedProcesses[result].ProcessId;
+        }
+
+        private static InjectContext[] SelectMethodsToIntercept(InjectContext[] contexts)
+        {
+            int numberOfOverloads = contexts.Length;
+            Console.WriteLine($"Found {numberOfOverloads} overloads:", Color.Yellow);
+
+            for (int i = 0; i < numberOfOverloads; i++)
+            {
+                Console.Write($"[{i + 1}] ", Color.White);
+                Console.WriteLine($"{contexts[i]}");
+            }
+
+            int[] result;
+            string input;
+            do
+            {
+                Console.Write("Select overload(s) to trace (e.g. " + $"{GetSelectionString(numberOfOverloads)}), or press Enter to trace all: ", Color.White);
+                input = Console.ReadLine();
+            } while (!TryGetSelection(input, numberOfOverloads, out result));
+
+            return result.Select(i => contexts[i - 1]).ToArray();
+        }
+
+        private static bool TryGetSelection(string input, int numberOfOverloads, out int[] result)
+        {
+            if (string.IsNullOrWhiteSpace(input))
+            {
+                result = Enumerable.Range(1, numberOfOverloads).ToArray();
+                return true;
+            }
+
+            int index = 0;
+            result = input.Split(new[] { "," }, StringSplitOptions.RemoveEmptyEntries)
+                          .Where(s =>
+                          {
+                              if (int.TryParse(s, out index) && index > numberOfOverloads)
+                              {
+                                  Console.WriteLine($"Invalid entry index {s}, skipping...", Color.Orange);
+                                  return false;
+                              }
+                              return true;
+                          })
+                          .Select(i => index)
+                          .Distinct()
+                          .OrderBy(i => i)
+                          .ToArray();
+
+            return true;
+        }
+
+        private static string GetSelectionString(int numberOfOverloads)
+        {
+            int half = numberOfOverloads / 2;
+            if (half == 1)
+                return "1,2";
+
+            return string.Join(",", Enumerable.Range(1, half)) + "..,n";
         }
 
         private static void PrintValues(ExecutionResult result)
